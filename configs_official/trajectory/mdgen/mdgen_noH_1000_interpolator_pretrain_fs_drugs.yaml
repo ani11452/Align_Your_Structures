@@ -1,0 +1,71 @@
+dataset:  
+  type: 'trajectory'
+  dataset: "MDGEN"
+  train_split: "${MDGEN_DATA_ROOT}/splits/4AA_train.csv"
+  val_split: "${MDGEN_DATA_ROOT}/splits/4AA_val.csv"
+  test_split: "${MDGEN_DATA_ROOT}/splits/4AA_test.csv"
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: false
+  expected_time_dim: 251
+  num_frames: 251
+  frame_rate: 100
+  start_frame: 
+  random_frame: true
+  seed: 42
+  subsample: 1.0
+  
+denoiser:
+  type: 'interpolator'
+  n_layers: 8
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  num_heads: 8
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'forward'
+  pretrain_ckpt: checkpoints/geom_conformer/mdwarp_tetrapeptide_pretrain_noH_1000_kabsch_conf_basic_es_order_3/epoch=1751-step=336384.ckpt
+  freeze_spatial: true
+  use_mha: false
+  use_kabsch: false
+  use_extra: true
+  use_double: true
+  sigmoid_init: true
+  use_norm: true
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+num_blocks: 4
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 1
+  accum_grad: 4
+  check_val_every_n_epoch: 4  # Run validation every N epochs (default: 2)
+  resume_from_checkpoint:
+
+eval:
+  batch_size: 2
+  num_sample_batches: 0
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 8
+  subsample: 1.0
+
+wandb:
+  entity: conf_traj_modeling
+  project: mdgen_trajectory_official_new
+  name: mdgen_noH_1000_interpolator_pretrain_fs_drugs

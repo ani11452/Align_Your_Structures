@@ -1,0 +1,110 @@
+dataset:  
+  type: 'both_trajectory'
+  datasets: ["DRUGS", "QM9"]
+
+  # DRUGS paths
+  train_traj_dir_drugs: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/train"
+  val_traj_dir_drugs: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/val"
+  test_traj_dir_drugs: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/test"
+  train_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Train.pkl"
+  val_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Val.pkl"
+  test_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Test_Actual_compat.pkl"
+
+  # QM9 paths
+  train_traj_dir_qm9: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/train"
+  val_traj_dir_qm9: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/val"
+  test_traj_dir_qm9: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/test"
+  train_conf_path_qm9: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Train.pkl"
+  val_conf_path_qm9: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Val.pkl"
+  test_conf_path_qm9: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Test_Actual_compat.pkl"
+
+  # Test on
+  test_on_drugs: false
+
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  
+  # Use DRUGS time dimension to avoid memory issues
+  # DRUGS: 251 time steps, QM9: 500 time steps
+  # We stick with DRUGS (251) for memory efficiency
+  expected_time_dim: 251
+  num_frames: 3263
+  frame_rate: 13
+  start_frame: 
+  random_frame: true
+  seed: 42
+  
+  # # Subsampling for each dataset
+  # subsample_drugs: 0.25
+  # subsample_qm9: 0.25
+  
+  # Mixing configuration: 50% DRUGS, 50% QM9
+  mixing:
+    ratio: {"DRUGS": 0.5, "QM9": 0.5}
+  
+denoiser:
+  type: 'interpolator'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  num_heads: 8
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  
+  # Conditioning options for both_trajectory:
+  #   - 'unconditional_forward': 50% with first frame conditioning, 50% unconditional (recommended)
+  #   - 'forward': Always condition on first frame
+  # Note: 'interpolation' is NOT supported for both_trajectory (different time dimensions)
+  conditioning: 'unconditional_forward'
+  
+  pretrain_ckpt: checkpoints/geom_conformer/both_noH_1000_kabsch_conf_basic_es_order_3/epoch=539-step=399600.ckpt
+  freeze_spatial: true
+  use_mha: false
+  use_kabsch: false
+  use_extra: true
+  use_double: true
+  sigmoid_init: true
+  use_norm: true
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+  # Note: num_blocks is set programmatically in eval.py based on test_on_drugs:
+  #   - DRUGS (test_on_drugs=true): 4 blocks for 1000 frames (4x250 frames)
+  #   - QM9 (test_on_drugs=false): 2 blocks for 500 frames (2x250)
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 2
+  accum_grad: 2
+  check_val_every_n_epoch: 4
+  resume_from_checkpoint:
+
+eval:
+  batch_size: 4
+  num_sample_batches: 1
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 16
+  subsample:
+  # Dataset-specific subsample files (selected based on test_on_drugs flag)
+  subsample_drugs: model_outputs_official/drugs_trajectory_official/drugs_noH_1000_kabsch_traj_interpolator_pretrain_fs_25/drugs_test_subset.pkl
+  subsample_qm9: model_outputs_official/qm9_trajectory_official/qm9_noH_1000_kabsch_traj_interpolator_pretrain_final_539_25/qm9_test_set.pkl
+
+wandb:
+  entity: conf_traj_modeling
+  project: both_trajectory_official
+  name: both_noH_1000_kabsch_traj_interpolator_unconditional_forward_50_50
+

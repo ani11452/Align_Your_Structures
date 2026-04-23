@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "upload_type": "dataset",
+    "title": "GEOM-QM9 & GEOM-DRUGS preprocessed conformer pickles (Align Your Structures, ICLR 2026)",
+    "creators": [
+      {"name": "Iyengar, Aniketh", "affiliation": "Stanford University"},
+      {"name": "Han, Jiaqi", "affiliation": "Stanford University"},
+      {"name": "Sun, Pengwei", "affiliation": "Stanford University"},
+      {"name": "Jiang, Mingjian", "affiliation": "Stanford University"},
+      {"name": "Xie, Jianwen", "affiliation": "Lambda, Inc."},
+      {"name": "Ermon, Stefano", "affiliation": "Stanford University"}
+    ],
+    "description": "<p>Preprocessed GEOM-QM9 and GEOM-DRUGS conformer pickles used for conformer-level diffusion pretraining (Stage 1) in <em>Align Your Structures: Generating Trajectories with Structure Pretraining for Molecular Dynamics</em> (ICLR 2026).</p><p><strong>Contents (6 pickles, ~3 GB uncompressed):</strong></p><ul><li><code>GEOM-QM9_Train.pkl</code> — QM9 train split</li><li><code>GEOM-QM9_Val.pkl</code> — QM9 validation split</li><li><code>GEOM-QM9_Test_Actual_compat.pkl</code> — QM9 test split (ConfGF 200-molecule official benchmark, repackaged)</li><li><code>GEOM-DRUGS_Train.pkl</code> — DRUGS train split</li><li><code>GEOM-DRUGS_Val.pkl</code> — DRUGS validation split</li><li><code>GEOM-DRUGS_Test_Actual_compat.pkl</code> — DRUGS test split (ConfGF 200-molecule official benchmark, repackaged)</li></ul><p><strong>Format:</strong> each pickle is a Python <code>list</code> of <code>dict</code>s with keys <code>atom_type</code>, <code>boltzmannweight</code>, <code>edge_index</code>, <code>edge_type</code>, <code>idx</code>, <code>nx</code>, <code>pos</code>, <code>rdmol</code>, <code>smiles</code>, <code>totalenergy</code>. Same fields as GeoDiff's PyTorch-Geometric <code>Data</code> format, repackaged as dicts to decouple loading from PyG version drift.</p><p><strong>Provenance:</strong> train / val derived from the GeoDiff preprocessed GEOM archive (<a href=\"https://github.com/MinkaiXu/GeoDiff\">MinkaiXu/GeoDiff</a>), itself built on top of the ConfGF preprocessing pipeline (<a href=\"https://github.com/DeepGraphLearning/ConfGF\">DeepGraphLearning/ConfGF</a>). Test split is ConfGF's official 200-molecule benchmark. Upstream raw GEOM: Axelrod &amp; Gómez-Bombarelli, <em>Scientific Data</em> 2022, doi:10.7910/DVN/JNGTDF.</p><p><strong>Extraction:</strong></p><pre>tar xf align-your-structures-conformer-pkls-v1.tar.gz -C ${MD_DATA_ROOT}/</pre><p>The archive expands into <code>processed_input_data/GEOM-{QM9,DRUGS}/</code>, matching the paths referenced in the <code>configs_official/</code> YAMLs.</p><p><strong>Reference code:</strong> <a href=\"https://github.com/ani11452/Align_Your_Structures\">https://github.com/ani11452/Align_Your_Structures</a></p><p>If you use this data please cite the paper above and the upstream GEOM dataset.</p>",
+    "keywords": [
+      "molecular conformers",
+      "GEOM-QM9",
+      "GEOM-DRUGS",
+      "diffusion models",
+      "generative models",
+      "ICLR 2026"
+    ],
+    "access_right": "open",
+    "license": "cc-by-4.0",
+    "version": "1.0.0",
+    "language": "eng",
+    "related_identifiers": [
+      {"identifier": "arXiv:2604.03911", "relation": "isSupplementTo", "resource_type": "publication-preprint"},
+      {"identifier": "https://github.com/ani11452/Align_Your_Structures", "relation": "isSupplementTo", "resource_type": "software"},
+      {"identifier": "10.7910/DVN/JNGTDF", "relation": "isDerivedFrom", "resource_type": "dataset"},
+      {"identifier": "https://github.com/MinkaiXu/GeoDiff", "relation": "isDerivedFrom", "resource_type": "software"},
+      {"identifier": "https://github.com/DeepGraphLearning/ConfGF", "relation": "isDerivedFrom", "resource_type": "software"}
+    ],
+    "communities": [{"identifier": "align-your-structures"}]
+  }
+}

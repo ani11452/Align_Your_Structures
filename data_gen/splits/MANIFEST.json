@@ -1,0 +1,44 @@
+{
+  "generated_at": "2026-04-21T03:34:12+00:00",
+  "md_data_root": "/atlas2/u/aniketh/md_data",
+  "data_loader_git_hash": "93c0eb2f113a33d5b1ae45916a96a32b049caa25",
+  "ignore_list_size": 65,
+  "splits": {
+    "qm9_train": {
+      "n_smiles": 1109,
+      "n_mol_dirs": 5534,
+      "sha256_of_sorted_basenames": "3c535cb309bbe2de9c60c1760229cd5ee849a942b9187f514a8d222ce6cabcc7",
+      "pkl_path": "data_gen/splits/qm9_train_mol_dirs.pkl"
+    },
+    "qm9_val": {
+      "n_smiles": 1018,
+      "n_mol_dirs": 5080,
+      "sha256_of_sorted_basenames": "1f03652c0d7eb34fc9213828d2160f11b5ab1fd5ecc310f3d4178c428ad3f41b",
+      "pkl_path": "data_gen/splits/qm9_val_mol_dirs.pkl"
+    },
+    "qm9_test": {
+      "n_smiles": 239,
+      "n_mol_dirs": 1193,
+      "sha256_of_sorted_basenames": "1e54958f54759ee3b6c09b1be1f1808bee96a096639a2d36f026bb192d08cbfe",
+      "pkl_path": "data_gen/splits/qm9_test_mol_dirs.pkl"
+    },
+    "drugs_train": {
+      "n_smiles": 1137,
+      "n_mol_dirs": 5682,
+      "sha256_of_sorted_basenames": "3d5234a06c3640e100756378a5d7c7ee97d2670e4ca620a61b8dbf512dc31d16",
+      "pkl_path": "data_gen/splits/drugs_train_mol_dirs.pkl"
+    },
+    "drugs_val": {
+      "n_smiles": 1044,
+      "n_mol_dirs": 5209,
+      "sha256_of_sorted_basenames": "f46a1beec798ea627b33f63a0bd4f62fb801a5841349819d471f150bfa37e35b",
+      "pkl_path": "data_gen/splits/drugs_val_mol_dirs.pkl"
+    },
+    "drugs_test": {
+      "n_smiles": 100,
+      "n_mol_dirs": 496,
+      "sha256_of_sorted_basenames": "2f14519645fcc97d721e62d31a144c5891100d53725bce09d1e4be4f6502b3ee",
+      "pkl_path": "data_gen/splits/drugs_test_mol_dirs.pkl"
+    }
+  }
+}

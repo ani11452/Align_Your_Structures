@@ -1,0 +1,57 @@
+dataset:  
+  type: 'conformer'
+  dataset: "QM9"
+  train_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns/train"
+  val_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns/val"
+  test_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns/test"
+  train_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Train.pkl"
+  val_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Val.pkl"
+  test_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Test_Actual_compat.pkl"
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  num_frames: 1
+  seed: 42
+  
+denoiser:
+  type: 'basic_es'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'none'
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 32
+  resume_from_checkpoint: ''
+
+eval:
+  batch_size: 32
+  num_sample_batches: 2
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 512
+  ratio: 2
+  subsample:
+
+wandb:
+  entity: conf_traj_modeling
+  project: qm9_conformer_official_fixed
+  name: qm9_noH_1000_kabsch_conf_basic_es_order_3

@@ -1,0 +1,77 @@
+dataset:  
+  type: 'both'
+  datasets: ["DRUGS", "QM9"]
+
+  # DRUGS paths
+  train_traj_dir_drugs: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns/train"
+  val_traj_dir_drugs: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns/val"
+  test_traj_dir_drugs: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns/test"
+  train_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Train.pkl"
+  val_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Val.pkl"
+  test_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Test_Actual_compat.pkl"
+
+  # QM9 paths
+  train_traj_dir_qm9: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns/train"
+  val_traj_dir_qm9: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns/val"
+  test_traj_dir_qm9: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns/test"
+  train_conf_path_qm9: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Train.pkl"
+  val_conf_path_qm9: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Val.pkl"
+  test_conf_path_qm9: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Test_Actual_compat.pkl"
+
+  # Test on
+  test_on_drugs: false
+
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  num_frames: 1
+  seed: 42
+  
+  # Mixing configuration for 'both' dataset type (only used when type == 'both')
+  mixing:
+    ratio: {"DRUGS": 0.5, "QM9": 0.5}  # 50% DRUGS, 50% QM9
+  
+denoiser:
+  type: 'basic_es'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'none'
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 128
+  accum_grad: 1
+  resume_from_checkpoint: checkpoints/geom_conformer/both_noH_1000_kabsch_conf_basic_es_order_3/epoch=327-step=242720.ckpt
+  check_val_every_n_epoch: 4
+
+eval:
+  batch_size: 128
+  num_sample_batches: 0
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 512
+  ratio: 2
+  subsample:
+
+wandb:
+  entity: conf_traj_modeling
+  project: geom_conformer
+  name: both_noH_1000_kabsch_conf_basic_es_order_3

@@ -1,0 +1,71 @@
+dataset:  
+  type: 'tetrapeptide_drugs'
+  
+  # DRUGS paths
+  train_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Train.pkl"
+  val_conf_path_drugs: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Val.pkl"
+  
+  # Tetrapeptide paths
+  train_conf_path_tetrapeptide: "${MD_DATA_ROOT}/tetrapeptide_conformers.pkl"
+  val_conf_path_tetrapeptide: "${MD_DATA_ROOT}/tetrapeptide_conformers.pkl"
+
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  num_frames: 1
+  seed: 42
+  
+  # Subsample DRUGS to control how much we see
+  # For pretrained case: subsample to ~10% so we cycle through tetrapeptide more
+  drugs_subsample: 0.15  # Use 15% of DRUGS dataset
+  
+  # Mixing configuration: 30% DRUGS, 70% tetrapeptide
+  mixing:
+    ratio: {"DRUGS": 0.25, "TETRAPEPTIDE": 0.75}
+
+denoiser:
+  type: 'basic_es'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'none'
+  pretrain_ckpt:
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 128
+  accum_grad: 1
+  resume_from_checkpoint: ''
+  check_val_every_n_epoch: 4
+
+eval:
+  batch_size: 128
+  num_sample_batches: 0
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 512
+  ratio: 2
+  subsample:
+
+wandb:
+  entity: conf_traj_modeling
+  project: geom_conformer
+  name: tetrapeptide_drugs_pretrained_noH_1000_kabsch_conf_basic_es_order_3
+

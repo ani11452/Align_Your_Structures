@@ -1,0 +1,242 @@
+import os, sys
+_PIPELINE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, _PIPELINE_DIR)
+
+import torch
+import torchani
+import numpy as np
+import mdtraj as md
+from tqdm import tqdm
+from rdkit import Chem
+from rdkit.Chem import AllChem
+import pickle
+import gc
+
+# ref_dir = os.environ.get('MD_DATA_ROOT', '') + '/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/test'
+ref_dir = os.environ.get('MD_DATA_ROOT', '') + '/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/test'
+# smile_match = os.path.join(_PIPELINE_DIR, 'smiles', 'qm9_test_smile_match.txt')
+smile_match = os.path.join(_PIPELINE_DIR, 'smiles', 'drugs_test_smile_match.txt')
+# output_path = "model_outputs_official/qm9_trajectory_official/qm9_noH_1000_kabsch_traj_interpolator_pretrain_final_539_25/epoch=399-step=69287-gen.pkl"
+# output_path = 'model_outputs_official/qm9_trajectory_official/qm9_noH_1000_kabsch_traj_egtn_539_25/epoch=399-step=69200-gen.pkl'
+output_path = "model_outputs_official/drugs_trajectory_official/drugs_noH_1000_kabsch_traj_interpolator_pretrain_fs_25/epoch=399-step=71200-long_simulation.pkl"
+with open(output_path, 'rb') as f:
+    outputs = pickle.load(f)
+
+# Load ANI2x model once globally to save memory
+print("Loading ANI2x model...")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+GLOBAL_ANI_MODEL = torchani.models.ANI2x().to(device)
+print(f"Model loaded on {device}")
+
+def add_hydrogens_optimize(rdmol, coords, optimize=True, retain_heavy=True):
+    """
+    Add hydrogens and optionally optimize them for each frame of heavy-atom-only MD.
+
+    Args:
+        rdmol: RDKit Mol (heavy atoms only, no Hs) with correct connectivity
+        coords: np.ndarray of shape (N_heavy, 3, T)
+        optimize: whether to perform MMFF optimization (default True)
+        retain_heavy: whether to fix heavy atom positions (default True)
+
+    Returns:
+        List of RDKit Mol objects with hydrogens added and optionally optimized
+    """
+    N_heavy, _, T = coords.shape
+    mols_with_h = []
+
+    for t in range(T):
+        # Get coordinates for this frame
+        heavy_xyz = coords[:, :, t]  # (N_heavy, 3)
+
+        # Create a copy of the heavy mol
+        mol = Chem.Mol(rdmol)
+
+        # Create conformer with frame coords
+        conf = Chem.Conformer(N_heavy)
+        for i in range(N_heavy):
+            x, y, z = heavy_xyz[i]
+            conf.SetAtomPosition(i, Chem.rdGeometry.Point3D(float(x), float(y), float(z)))
+        mol.RemoveAllConformers()
+        mol.AddConformer(conf)
+
+        # Add hydrogens with idealized coordinates
+        mol = Chem.AddHs(mol, addCoords=True)
+
+        if optimize:
+            # Get indices of atoms to fix (i.e., heavy atoms)
+            if retain_heavy:
+                heavy_idxs = [atom.GetIdx() for atom in mol.GetAtoms() if atom.GetAtomicNum() > 1]
+            else:
+                heavy_idxs = []
+
+            # Try MMFF first
+            if AllChem.MMFFHasAllMoleculeParams(mol):
+                try:
+                    AllChem.MMFFOptimizeMolecule(mol, mmffVariant='MMFF94', fixedAtoms=heavy_idxs)
+                except:
+                    pass
+            else:
+                # Fallback to UFF if MMFF fails
+                try:
+                    AllChem.UFFOptimizeMolecule(mol, fixedAtoms=heavy_idxs)
+                except:
+                    pass
+
+        mols_with_h.append(mol)
+
+    return mols_with_h
+def compute_framewise_energies(rdmol, coords, energy_model=None):
+    """
+    Args:
+        rdmol: RDKit Mol with correct heavy-atom topology (no Hs)
+        coords: np.ndarray of shape (N_heavy, 3, T)
+
+    Returns:
+        energies: list of float, energy (in Hartree) for each frame
+    """
+    if energy_model is None:
+        energy_model = GLOBAL_ANI_MODEL
+    model = energy_model
+    species_to_tensor = model.species_to_tensor
+
+    # Add hydrogens to each frame
+    frame_rdmols = add_hydrogens_optimize(rdmol, coords)
+
+    all_species = []
+    all_coordinates = []
+
+    for mol in frame_rdmols:
+        conf = mol.GetConformer()
+        coords_frame = []
+        symbols = []
+        for atom in mol.GetAtoms():
+            pos = conf.GetAtomPosition(atom.GetIdx())
+            coords_frame.append([pos.x, pos.y, pos.z])
+            symbols.append(atom.GetSymbol())
+
+        # Ensure consistent atom order
+        all_species.append(species_to_tensor(symbols))
+        all_coordinates.append(torch.tensor(coords_frame, dtype=torch.float32))
+
+    # Stack into batch tensors: [T, N], [T, N, 3]
+    species_tensor = torch.stack(all_species).to(device)          # [T, N]
+    coordinates_tensor = torch.stack(all_coordinates).to(device)  # [T, N, 3]
+
+    with torch.no_grad():
+        output = model((species_tensor, coordinates_tensor))
+        energies = output.energies.cpu().numpy().tolist()  # [T] as Python floats
+
+    return energies
+
+
+def compute_energy_gen_batch(rdmol, coords):
+    batch_energies = []
+    for coord in coords:
+        print(f"coord shape: {coord.shape}")
+        num_frames = coord.shape[2]  # coord is (N_heavy, 3, T)
+        
+        # If trajectory is longer than 500 frames, split into chunks
+        if num_frames > 500:
+            chunk_size = 500
+            energies_list = []
+            num_chunks = (num_frames + chunk_size - 1) // chunk_size  # Ceiling division
+            
+            for chunk_idx in range(num_chunks):
+                start_frame = chunk_idx * chunk_size
+                end_frame = min(start_frame + chunk_size + 1, num_frames)
+                coord_chunk = coord[:, :, start_frame:end_frame]
+                
+                chunk_energies = compute_framewise_energies(rdmol, coord_chunk, energy_model=GLOBAL_ANI_MODEL)
+                
+                # For chunks after the first, skip the first frame to avoid duplication
+                if chunk_idx > 0:
+                    chunk_energies = chunk_energies[1:]
+                energies_list.extend(chunk_energies)
+            
+            batch_energies.append(energies_list)
+        else:
+            # If 500 frames or less, process normally
+            batch_energies.append(compute_framewise_energies(rdmol, coord, energy_model=GLOBAL_ANI_MODEL))
+    
+    return batch_energies
+
+results = {}
+smiles_range = [0,150]
+for smiles in tqdm(list(outputs.keys())[smiles_range[0]:smiles_range[1]]):
+    print(smiles)
+    if any(atom.GetSymbol() not in ["H", "C", "N", "O", "F", "S", "Cl"] for atom in outputs[smiles]['rdmol'].GetAtoms()):
+        continue
+    try:
+        rdmol = outputs[smiles]['rdmol']  # RDKit Mol object with heavy atoms only
+        # Get heavy atom coordinates from outputs
+        coords = outputs[smiles]['coords']  # Shape: (1, N_heavy, 3, 4001)
+        print(f"coords shape: {coords[0].shape}")
+        
+        # Compute energies (automatically chunks if > 500 frames)
+        energies = compute_energy_gen_batch(rdmol, coords)
+        energies_list = energies[0]  # Get the single trajectory energies
+        
+        if len(energies_list) != 4001:
+            print(f"Expected 4001 energy values, got {len(energies_list)}")
+            continue
+        
+        # energies is (1, 4001). Discard the first frame and divide into 16 blocks of 250
+        energies_block = {i: [] for i in range(1, 17)}
+        for block_idx in range(1, 17):
+            start = 1 + (block_idx - 1) * 250
+            end = start + 250
+            energies_block[block_idx].append(energies_list[start:end])
+
+    except Exception as e:
+        print(f"Error computing energies for {smiles}: {e}")
+        continue
+    
+    print(f"ref_traj_ids")
+    ref_traj_ids = []
+    with open(smile_match, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if smiles == line.split('\t')[0]:
+                full_name = line.split('\t')[1]
+                last_number = full_name[-1]
+                if last_number in {'1', '2', '3', '4', '6', '7', '8', '9'}:
+                    ref_traj_ids.append(full_name)
+                    break
+
+    name = full_name.split('/')[-1]
+    ref_traj_paths = [f'{ref_dir}/{traj_id}/traj.xtc' for traj_id in ref_traj_ids]
+    ref_pdb_paths = [f'{ref_dir}/{traj_id}/system.pdb' for traj_id in ref_traj_ids]
+    mol_path = "/".join(ref_traj_paths[0].split("/")[:-1])+'/mol.pkl'  # Only get atoms from mol, thus all traj of the same molecule share the same mol info
+    mol = pickle.load(open(mol_path, 'rb'))
+    mol_noH = Chem.RemoveHs(mol)  # Remove H atoms from the mol
+    important_atoms = list(mol.GetSubstructMatch(mol_noH))
+    # Get the reference trajectories as coords: (N_heavy, 3, T)
+    ref_coords = []
+    
+    traj = md.load(ref_traj_paths[0], top=ref_pdb_paths[0])
+    coords = traj.xyz[:, important_atoms, :]  # Shape: (T, N_heavy, 3)
+    # Transpose to (N_heavy, 3, T)
+    coords = coords.transpose(1, 2, 0) * 10  # Convert to Angstroms
+    ref_coords.append(coords)
+    try:
+        ref_energies = compute_energy_gen_batch(mol_noH, ref_coords)
+    except Exception as e:
+       print(f"Error computing reference energies for {smiles}: {e}")
+       continue
+    # Save results to a file
+    results[smiles] = {
+        'energies': energies_block,           # 16 blocks
+        'energies_full': energies,            # Full trajectory (1, 4001)
+        'ref_energies': ref_energies          # Reference energies
+    }
+    
+    # Clear memory after each molecule
+    del energies, energies_list, ref_energies
+    del coords
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
+
+output_file = f"drug_long_simulation_block_energy_results_{smiles_range[0]}.pkl"
+with open(output_file, 'wb') as f:
+    f.write(pickle.dumps(results))

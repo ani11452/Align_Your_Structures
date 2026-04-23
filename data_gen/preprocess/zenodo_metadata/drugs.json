@@ -1,0 +1,33 @@
+{
+  "metadata": {
+    "upload_type": "dataset",
+    "title": "GEOM-DRUGS pre-simulated MD trajectories (Align Your Structures, ICLR 2026)",
+    "creators": [
+      {"name": "Iyengar, Aniketh", "affiliation": "Stanford University"},
+      {"name": "Han, Jiaqi", "affiliation": "Stanford University"},
+      {"name": "Sun, Pengwei", "affiliation": "Stanford University"},
+      {"name": "Jiang, Mingjian", "affiliation": "Stanford University"},
+      {"name": "Xie, Jianwen", "affiliation": "Lambda, Inc."},
+      {"name": "Ermon, Stefano", "affiliation": "Stanford University"}
+    ],
+    "description": "<p>Pre-simulated molecular-dynamics trajectories for the GEOM-DRUGS subset used in <em>Align Your Structures: Generating Trajectories with Structure Pretraining for Molecular Dynamics</em> (ICLR 2026).</p><p><strong>Contents:</strong> 11,387 per-molecule simulation directories (5,682 train / 5,209 val / 496 test), corresponding to the 1,137 / 1,044 / 100 unique SMILES described in §5.2 of the paper. Each directory contains <code>mol.pkl</code> (RDKit Mol with hydrogens), <code>system.pdb</code> (OpenMM topology + initial positions), <code>traj.xtc</code> (5 ns trajectory at 4 fs timestep, frame_interval=100), and <code>smiles.txt</code>. Three <code>*_mol_dirs.pkl</code> split files under <code>splits/</code> allow deterministic loader reproduction.</p><p><strong>Simulation settings:</strong> all-atom, explicit-solvent, 5 ns per trajectory, 4 fs timestep, hydrogen mass repartitioning at 1.5 amu, 100-step frame interval. Five independent replicas per SMILES.</p><p><strong>Multi-part archive:</strong> the 27 GB tarball is split into 5 GB parts for reliable upload. After downloading all parts, reassemble and extract in one command:</p><pre>cat geom-drugs-align-your-structures-v1.tar.gz.part* &gt; geom-drugs-align-your-structures-v1.tar.gz\ntar xf geom-drugs-align-your-structures-v1.tar.gz</pre><p><strong>Reference code:</strong> <a href=\"https://github.com/ani11452/Align_Your_Structures\">https://github.com/ani11452/Align_Your_Structures</a></p><p>If you use this data please cite the paper above and the upstream GEOM dataset (Axelrod &amp; Gómez-Bombarelli, <em>Scientific Data</em> 2022, doi:10.7910/DVN/JNGTDF).</p>",
+    "keywords": [
+      "molecular dynamics",
+      "GEOM-DRUGS",
+      "diffusion models",
+      "generative models",
+      "OpenMM",
+      "ICLR 2026"
+    ],
+    "access_right": "open",
+    "license": "cc-by-4.0",
+    "version": "1.0.0",
+    "language": "eng",
+    "related_identifiers": [
+      {"identifier": "arXiv:2604.03911", "relation": "isSupplementTo", "resource_type": "publication-preprint"},
+      {"identifier": "https://github.com/ani11452/Align_Your_Structures", "relation": "isSupplementTo", "resource_type": "software"},
+      {"identifier": "10.7910/DVN/JNGTDF", "relation": "isDerivedFrom", "resource_type": "dataset"}
+    ],
+    "communities": [{"identifier": "align-your-structures"}]
+  }
+}

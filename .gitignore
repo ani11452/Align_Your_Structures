@@ -1,0 +1,48 @@
+# --- file-type exclusions (data + logs + cached artifacts) ---
+*.csv
+*.pdb
+*.xtc
+*.dcd
+*.json
+*.log
+*.h5
+*.pkl
+*.png
+*.pdf
+*.npy
+*.ckpt
+
+# --- interpreter / IDE caches ---
+__pycache__
+**/__pycache__/
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+core
+
+# --- experiment / training runtime dirs ---
+wandb/
+lightning_logs/
+job_logs/
+checkpoints/
+
+# --- generated sample / plot / eval-output dirs ---
+vis*/
+**/*plots
+**/final_plot/
+eval/data_sample
+eval/decorrelation_time_analysis/
+evalout_local/
+model_outputs_official/*
+
+# --- README / docs figures (opt-in) ---
+!assets/
+!assets/*.png
+
+# --- checked-in split pkls (opt-in) ---
+!data_gen/splits/
+!data_gen/splits/*.pkl
+!data_gen/splits/MANIFEST.json
+
+# --- Zenodo release metadata (opt-in) ---
+!data_gen/preprocess/zenodo_metadata/
+!data_gen/preprocess/zenodo_metadata/*.json

@@ -1,0 +1,73 @@
+dataset:  
+  type: 'trajectory'
+  dataset: "DRUGS"
+  train_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/train"
+  val_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/val"
+  test_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/test"
+  train_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Train.pkl"
+  val_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Val.pkl"
+  test_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Test_Actual_compat.pkl"
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  expected_time_dim: 251
+  num_frames: 3263
+  frame_rate: 13
+  start_frame: 
+  random_frame: true
+  seed: 42
+  subsample: 0.25
+  
+denoiser:
+  type: 'interpolator'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  num_heads: 8
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'forward'
+  pretrain_ckpt: 
+  freeze_spatial: false
+  use_mha: false
+  use_kabsch: false
+  use_extra: true
+  use_double: true
+  sigmoid_init: true
+  use_norm: true
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 1
+  accum_grad: 4
+  resume_from_checkpoint:
+
+eval:
+  batch_size: 2
+  num_sample_batches: 1
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 5
+  ratio: 2
+  subsample: 
+  # 'NC(=O)NCC[C@H]1CO1', 'C[C@@H](O)[C@@H](O)[C@@H](N)C#N', 'C[C@@H](C#N)C(=O)CCO', 'OC[C@H]1C[C@@H](O)CCO1'
+
+wandb:
+  entity: conf_traj_modeling
+  project: drugs_trajectory_official
+  name: drugs_noH_1000_kabsch_traj_interpolator_naive_fs_25

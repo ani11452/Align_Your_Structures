@@ -1,0 +1,59 @@
+dataset:  
+  type: 'tetrapeptide'
+  
+  # Tetrapeptide paths
+  train_conf_path: "${MD_DATA_ROOT}/tetrapeptide_conformers_final_train.pkl"
+  val_conf_path: "${MD_DATA_ROOT}/tetrapeptide_conformers_final_val.pkl"
+
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  num_frames: 1
+  seed: 42
+
+denoiser:
+  type: 'basic_es'
+  n_layers: 8
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'none'
+  pretrain_ckpt: checkpoints/drugs_conformer_official_fixed/drugs_noH_1000_kabsch_conf_basic_es_order_3/epoch=539-step=801900.ckpt
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 2000
+  batch_size: 128
+  accum_grad: 1
+  resume_from_checkpoint:
+  check_val_every_n_epoch: 4
+
+eval:
+  batch_size: 128
+  num_sample_batches: 0
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 512
+  ratio: 2
+  subsample:
+
+wandb:
+  entity: conf_traj_modeling
+  project: geom_conformer
+  name: mdwarp_tetrapeptide_pretrain_noH_1000_kabsch_conf_basic_es_order_3
+

@@ -1,0 +1,68 @@
+dataset:  
+  type: 'trajectory'
+  dataset: "DRUGS"
+  train_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/train"
+  val_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/val"
+  test_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-DRUGS/4fs_HMR15_5ns_actual/test"
+  train_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Train.pkl"
+  val_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Val.pkl"
+  test_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-DRUGS/GEOM-DRUGS_Test_Actual_compat.pkl"
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  expected_time_dim: 251
+  num_frames: 3263
+  frame_rate: 13
+  start_frame: 
+  random_frame: true
+  seed: 42
+  subsample: 0.25
+  
+denoiser:
+  type: 'stack'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  num_heads: 8
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'forward'
+  pretrain_ckpt: checkpoints/drugs_conformer_official_fixed/drugs_noH_1000_kabsch_conf_basic_es_order_3/epoch=539-step=801900.ckpt
+  freeze_spatial: true
+  use_kabsch: false
+  use_norm: true
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 2
+  accum_grad: 2
+  check_val_every_n_epoch: 4  # Run validation every N epochs (default: 2)
+  resume_from_checkpoint:
+
+eval:
+  batch_size: 2
+  num_sample_batches: 1
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 8
+  subsample: model_outputs_official/drugs_trajectory_official/drugs_noH_1000_kabsch_traj_interpolator_pretrain_fs_25/drugs_test_subset.pkl
+
+wandb:
+  entity: conf_traj_modeling
+  project: drugs_trajectory_official
+  name: drugs_noH_1000_kabsch_traj_stack_pretrain_fs

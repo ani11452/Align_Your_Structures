@@ -1,0 +1,72 @@
+dataset:  
+  type: 'trajectory'
+  dataset: "QM9"
+  train_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/train"
+  val_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/val"
+  test_traj_dir: "${MD_DATA_ROOT}/output_trajectories/GEOM-QM9/4fs_HMR15_5ns_actual/test"
+  train_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Train.pkl"
+  val_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Val.pkl"
+  test_conf_path: "${MD_DATA_ROOT}/processed_input_data/GEOM-QM9/GEOM-QM9_Test_Actual_compat.pkl"
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: true
+  expected_time_dim: 500
+  num_frames: 6500
+  frame_rate: 13
+  start_frame: 
+  random_frame: true
+  seed: 42
+  subsample: 0.25
+  
+denoiser:
+  type: 'interpolator_simple'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  num_heads: 8
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'none'
+  pretrain_ckpt: checkpoints/qm9_conformer_official_fixed/qm9_noH_1000_kabsch_conf_basic_es_order_3/epoch=539-step=795960.ckpt
+  freeze_spatial: true
+  use_mha: false
+  use_kabsch: false
+  use_extra: true
+  use_double: true
+  sigmoid_init: true
+  use_norm: true
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 2
+  accum_grad: 2
+  resume_from_checkpoint:
+
+eval:
+  batch_size: 4
+  num_sample_batches: 1
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 16
+  ratio: 1
+  subsample: 0.25
+
+wandb:
+  entity: conf_traj_modeling
+  project: qm9_trajectory_official
+  name: qm9_noH_1000_kabsch_traj_interpolator_pretrain_simple

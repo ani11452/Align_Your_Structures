@@ -1,0 +1,67 @@
+dataset:  
+  type: 'trajectory'
+  dataset: "TIMEWARP"
+  train_traj_dir: "${TIMEWARP_DATA_ROOT}/data/4AA-large/4AA-large-processed/train"
+  val_traj_dir: "${TIMEWARP_DATA_ROOT}/data/4AA-large/4AA-large-processed/val"
+  test_traj_dir: "${TIMEWARP_DATA_ROOT}/data/4AA-large/4AA-large-processed/test"
+  features: ['aromatic', 'hybridization', 'partial_charge', 'implicit_valence', 'degree', 'formal_charge', 'ring_size', 'chirality']
+  transforms: ['edge_order|3']
+  remove_hs: true
+  filter_data: false
+  expected_time_dim: 251
+  num_frames: 2510
+  frame_rate: 10
+  start_frame: 
+  random_frame: true
+  seed: 42
+  subsample: 1.0
+  # Timewarp-specific: frames per trajectory chunk
+  # Val/test have 50000 frames total -> split into 5 chunks of 10000 each
+  # Train may have more frames per trajectory
+  frames_per_example_train: 10000  # Frames per chunk for training
+  frames_per_example_val: 10000    # Frames per chunk for validation
+  frames_per_example_test: 10000   # Frames per chunk for testing
+  
+denoiser:
+  type: 'egtn'
+  n_layers: 6
+  node_dim: 30
+  ft_dim: 42
+  edge_dim: 4
+  hidden_dim: 128
+  time_emb_dim: 32
+  act_fn: 'silu'
+  scale: 1
+  pre_norm: false
+  conditioning: 'forward'
+  pretrain_ckpt:
+
+diffusion:
+  beta_schedule_name: 'linear'
+  num_timesteps: 1000
+  use_kabsch_alignment: true
+
+optim:
+  lr: 1.0e-4
+  weight_decay: 0
+
+train:
+  max_epochs: 1000
+  batch_size: 4
+  accum_grad: 1
+  check_val_every_n_epoch: 4  # Run validation every N epochs (default: 2)
+  resume_from_checkpoint:
+
+eval:
+  batch_size: 4
+  num_sample_batches: 0
+  samples_output_dir: "./vis_samples"
+
+test:
+  batch_size: 8
+  subsample: 1.0
+
+wandb:
+  entity: conf_traj_modeling
+  project: timewarp_trajectory_official
+  name: timewarp_noH_1000_egtn
